@@ -46,7 +46,7 @@ pipeline {
 
                 stage('Rest'){
                     agent {label 'Agent2'}
-                    steps{
+                    steps{  
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE'){
                             echo "---- REST ----"
                             sh'''
@@ -60,8 +60,10 @@ pipeline {
                             '''
                             }
                         stash name: 'rest-res', includes: 'result-res.xml'
+                    }
                 }
             }
+
         }
 
         stage ('Results'){
