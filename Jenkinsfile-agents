@@ -29,33 +29,35 @@ pipeline {
                 stage('Unit'){
                      agent {label 'Agent4'}
                      steps{
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE')
-                        unstash name: 'code'
-                        echo "---- UNIT ----"
-                        sh '''
-                        whoami
-                        hostname
-                        export PYTHONPATH=$PWD
-                        pytest --junitxml=result-unit.xml ./test/unit
-                        '''
-                        stash-name:'unit-res', includes: 'result-unit.xml'
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE'){
+                            unstash name: 'code'
+                            echo "---- UNIT ----"
+                            sh '''
+                            whoami
+                            hostname
+                            export PYTHONPATH=$PWD
+                            pytest --junitxml=result-unit.xml ./test/unit
+                            '''
+                            stash-name:'unit-res', includes: 'result-unit.xml'
+                        }
                      }
                 }
                 stage('Rest'){
                     agent {label 'Agent2'}
                     steps{
-                        echo "---- REST ----"
-                        sh'''
-                        whoami
-                        hostname
-                        export FLASK_APP=./app/api.py
-                        flask run &
-                        java -jar ./test/wiremock/wiremock-standalone-3.13.2.jar --port 9090 --root-dir ./test/wiremock &
-                        sleep 10s
-                        pytest --junitxml=result-rest.xml ./test/rest
-                        '''
-                        stash-name: 'rest-res', includes: 'result-res.xml'
-                    }
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE'){
+                            echo "---- REST ----"
+                            sh'''
+                            whoami
+                            hostname
+                            export FLASK_APP=./app/api.py
+                            flask run &
+                            java -jar ./test/wiremock/wiremock-standalone-3.13.2.jar --port 9090 --root-dir ./test/wiremock &
+                            sleep 10s
+                            pytest --junitxml=result-rest.xml ./test/rest
+                            '''
+                            stash-name: 'rest-res', includes: 'result-res.xml'
+                        }
                 }
             }
         }
