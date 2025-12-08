@@ -36,9 +36,9 @@ pipeline {
                         whoami
                         hostname
                         export PYTHONPATH=$PWD
-                        pytest ./test/unit
+                        pytest --junitxml=result-unit.xml ./test/unit
                         '''
-                        stash-name: 'unit-res', includes: 'result-unit.xml'
+                        stash-name:'unit-res', includes: 'result-unit.xml'
                      }
                 }
                 stage('Rest'){
@@ -52,9 +52,9 @@ pipeline {
                         flask run &
                         java -jar ./test/wiremock/wiremock-standalone-3.13.2.jar --port 9090 --root-dir ./test/wiremock &
                         sleep 10s
-                        pytest --junitxml=result-rest.xml test/rest
+                        pytest --junitxml=result-rest.xml ./test/rest
                         '''
-                         stash-name: 'rest-res', includes: 'result-res.xml'
+                        stash-name: 'rest-res', includes: 'result-res.xml'
                     }
                 }
             }
