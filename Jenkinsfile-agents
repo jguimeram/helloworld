@@ -6,7 +6,8 @@ pipeline {
             agent {label 'Agent1'}
             steps{
                 echo "---- DOWNLOAD REPO ----"
-                git url: "https://github.com/jguimeram/helloworld"
+//                git url: "https://github.com/jguimeram/helloworld"
+                git checkout
                 sh '''
                 whoami
                 hostname
