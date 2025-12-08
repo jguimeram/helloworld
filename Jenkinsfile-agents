@@ -60,7 +60,7 @@ pipeline {
                             sleep 10s
                             pytest --junitxml=result-rest.xml ./test/rest
                             '''
-                           stash name: 'rest-res', includes: 'result-res.xml'
+                           stash name: 'rest-res', includes: 'result-rest.xml'
                             }
                     }
                 }
