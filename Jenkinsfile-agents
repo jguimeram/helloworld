@@ -40,8 +40,8 @@ pipeline {
                             export PYTHONPATH=$PWD
                             pytest --junitxml=result-unit.xml ./test/unit
                             '''
+                            stash name:'unit-res', includes: 'result-unit.xml'
                         }
-                        stash name:'unit-res', includes: 'result-unit.xml'
                      }
                 }
 
@@ -60,8 +60,8 @@ pipeline {
                             sleep 10s
                             pytest --junitxml=result-rest.xml ./test/rest
                             '''
+                           stash name: 'rest-res', includes: 'result-res.xml'
                             }
-                        stash name: 'rest-res', includes: 'result-res.xml'
                     }
                 }
             }
