@@ -7,7 +7,11 @@ pipeline {
             steps{
                 echo "---- DOWNLOAD REPO ----"
                 git url: "https://github.com/jguimeram/helloworld"
-                sh "ls -la"
+                sh '''
+                whoami
+                hostname
+                ls -la
+                '''
                 echo "---- WORKSPACE ----"
                 echo WORKSPACE
                 stash name: 'code', includes:'**' //includes everything
@@ -29,6 +33,8 @@ pipeline {
                         unstash name: 'code'
                         echo "---- UNIT ----"
                         sh '''
+                        whoami
+                        hostname
                         export PYTHONPATH=$PWD
                         pytest ./test/unit
                         '''
@@ -40,6 +46,8 @@ pipeline {
                     steps{
                         echo "---- REST ----"
                         sh'''
+                        whoami
+                        hostname
                         export FLASK_APP=./app/api.py
                         flask run &
                         java -jar ./test/wiremock/wiremock-standalone-3.13.2.jar --port 9090 --root-dir ./test/wiremock &
@@ -55,6 +63,10 @@ pipeline {
         stage ('Results'){
             agent {label 'Agent3'}
             steps{
+                sh '''
+                whoami
+                hostname
+                '''
                 unstash name: 'unit-res'
                 unstash name: 'rest-res'
                 junit 'result*.xml'
