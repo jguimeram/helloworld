@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+
     options {skipDefaultCheckout()}
     stages {
         stage('Download'){
@@ -19,6 +19,7 @@ pipeline {
         }
 
          stage('Build'){
+            agent any
             steps{
                 echo 'Python no compila.'
             }
@@ -48,6 +49,7 @@ pipeline {
                     agent {label 'Agent2'}
                     steps{  
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE'){
+                            unstash name: 'code'
                             echo "---- REST ----"
                             sh'''
                             whoami
