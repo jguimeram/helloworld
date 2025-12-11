@@ -5,7 +5,8 @@ pipeline {
         stage('Download'){
             steps{
                 echo "---- DOWNLOAD REPO ----"
-                git url: "https://github.com/jguimeram/helloworld"
+                checkout scm
+                //git url: "https://github.com/jguimeram/helloworld"
                 sh "ls -la"
                 echo "---- WORKSPACE ----"
                 echo WORKSPACE
