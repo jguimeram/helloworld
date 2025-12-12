@@ -2,11 +2,13 @@
 
 Ejercicio CP1.1
 
-## Versión V3
+## Versión V4
 
-En esta versión he añadido un Jenkinsfile-agents con el pipeline que se ejecutará con 4 agentes diferentes:
+### Versión para pasar tests funcionales y no funcionales
+1 - Funcionales
+    pytest + coverage
+2 - No funcionales
+    flask8
 
+Desde pipeline ejecutado en Jenkins (sin Jenkinsfile)
 
-3 Agentes en local mediante archivo .jar
-1 Agente en otra máquina por ssh
-El built-in agent está desactivado tal y como recomienda el propio Jenkins
