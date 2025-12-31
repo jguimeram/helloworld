@@ -1,10 +1,10 @@
 # Repo para EU - DevOps&Cloud - UNIR
 
-Ejercicio CP1.1
+Ejercicio CP1.2
 
-## Versión V6
+## Versión V1
 
-### Versión para pasar tests funcionales y no funcionales
+### Tests funcionales y no funcionales con Jenkinsfile
 1 - Funcionales
     pytest + coverage
 2 - No funcionales
@@ -12,5 +12,4 @@ Ejercicio CP1.1
 3 - Static
     Bandit
 
-Desde pipeline ejecutado en Jenkins (sin Jenkinsfile)
 
