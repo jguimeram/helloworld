@@ -5,7 +5,7 @@ pipeline {
         stage('Get Code') {
             steps {
                 echo '---- DOWNLOAD REPO ----'
-                git branch: 'master', changelog: false, poll: false, url: 'https://github.com/jguimeram/helloworld/'
+                checkout scm
                 sh 'ls -la'
                 echo '---- WORKSPACE ----'
                 echo WORKSPACE
