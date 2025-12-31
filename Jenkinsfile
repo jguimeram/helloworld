@@ -34,7 +34,7 @@ pipeline {
                         '''
                     }
                 }
-                
+
                 stage('Static') {
                     steps {
                         echo '---- STATIC ----'
@@ -44,7 +44,7 @@ pipeline {
                         '''
                     }
                 }
-                
+
                 stage('Coverage') {
                     steps {
                         sh'''
@@ -54,7 +54,7 @@ pipeline {
                         recordCoverage qualityGates: [[criticality: 'NOTE', integerThreshold: 85, metric: 'LINE', threshold: 85.0], [criticality: 'ERROR', integerThreshold: 60, metric: 'LINE', threshold: 60.0], [criticality: 'NOTE', integerThreshold: 85, metric: 'BRANCH', threshold: 85.0], [criticality: 'ERROR', integerThreshold: 60, metric: 'BRANCH', threshold: 60.0]], tools: [[parser: 'COBERTURA', pattern: 'coverage.xml']]
                     }
                 }
-                
+
                 stage('Security') {
                     steps {
                         sh'''
@@ -63,7 +63,7 @@ pipeline {
                         recordIssues qualityGates: [[integerThreshold: 1, threshold: 1.0, type: 'TOTAL'], [criticality: 'FAILURE', integerThreshold: 3, threshold: 3.0, type: 'TOTAL']], sourceCodeRetention: 'LAST_BUILD', tools: [pyLint(name: 'bandit', pattern: 'bandit.out')]
                     }
                 }
-                
+
                 stage('Performance') {
                     steps {
                         sh'''
@@ -71,8 +71,14 @@ pipeline {
                         '''
                         perfReport filterRegex: '', showTrendGraphs: true, sourceDataFiles: '/home/jenkins/scripts/test1.jtl'
                     }
-                } 
+                }
             }
+        }
+    }
+    post {
+        always {
+            echo '---- Clean Workspace ----'
+            deleteDir()
         }
     }
 }
