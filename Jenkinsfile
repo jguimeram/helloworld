@@ -6,7 +6,6 @@ pipeline {
             steps {
                 echo '---- DOWNLOAD REPO ----'
                 checkout scm
-                sh 'ls -la'
                 echo '---- WORKSPACE ----'
                 echo WORKSPACE
             }
