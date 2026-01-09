@@ -37,13 +37,13 @@ pipeline {
 
                 stage('Static') {
                     steps {
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                            echo '---- STATIC ----'
-                            sh'''
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE'){
+                        echo '---- STATIC ----'
+                        sh'''
                         export PYTHONPATH=$PWD
                         flake8 --format=pylint --exit-zero app > flake8.out
                         '''
-                            recordIssues qualityGates: [[integerThreshold: 8, threshold: 8.0, type: 'TOTAL'], [criticality: 'FAILURE', integerThreshold: 10, threshold: 10.0, type: 'TOTAL']], sourceCodeRetention: 'LAST_BUILD', tools: [flake8(pattern: 'flake8.out')]
+                        recordIssues qualityGates: [[integerThreshold: 8, threshold: 8.0, type: 'TOTAL'], [criticality: 'FAILURE', integerThreshold: 10, threshold: 10.0, type: 'TOTAL']], sourceCodeRetention: 'LAST_BUILD', tools: [flake8(pattern: 'flake8.out')]
                         }
                     }
                 }
@@ -86,4 +86,5 @@ pipeline {
         }
     }
 }
+
 
