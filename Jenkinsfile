@@ -15,7 +15,6 @@ pipeline {
                     steps {
                         echo '---- UNIT ----'
                         sh '''
-                        cp /home/jenkins/scripts/.coveragerc .
                         export PYTHONPATH=$PWD
                         pytest --cov=app --cov-branch --cov-report=xml test/unit
                         '''
