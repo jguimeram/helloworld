@@ -61,7 +61,7 @@ pipeline {
                 stage('Security') {
                     steps {
                         sh'''
-                        bandit --exit-zero -r test -f custom -o bandit.out
+                        bandit --exit-zero -r app test -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"
                         '''
                         recordIssues qualityGates: [[integerThreshold: 1, threshold: 1.0, type: 'TOTAL'], [criticality: 'FAILURE', integerThreshold: 3, threshold: 3.0, type: 'TOTAL']], sourceCodeRetention: 'LAST_BUILD', tools: [pyLint(name: 'bandit', pattern: 'bandit.out')]
                     }
