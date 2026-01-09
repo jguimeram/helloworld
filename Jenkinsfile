@@ -2,10 +2,10 @@ pipeline {
     agent any
     options { skipDefaultCheckout() }
     stages {
-        stage('Get Code') {
+            stage('Get Code') {
             steps {
                 echo '---- DOWNLOAD REPO ----'
-                git branch: 'master', url: 'https://github.com/jguimeram/helloworld.git'
+                checkout scm
                 echo '---- WORKSPACE ----'
                 echo WORKSPACE
             }
