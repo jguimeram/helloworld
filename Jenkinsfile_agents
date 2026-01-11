@@ -16,7 +16,7 @@ pipeline {
         stage('Unit') {
             agent { label 'agent-docker-4' }
                     steps {
-                        unstage name: 'code'
+                        unstash name: 'code'
                         echo '---- UNIT ----'
                         sh '''
                         cp /home/jenkins/scripts/.coveragerc .
@@ -31,7 +31,7 @@ pipeline {
                 stage('Rest') {
                     agent { label 'agent-docker-1' }
                     steps {
-                        unstage name: 'code'
+                        unstash name: 'code'
                         echo '---- REST ----'
                         sh'''
                         export FLASK_APP=./app/api.py
@@ -46,7 +46,7 @@ pipeline {
                 stage('Static') {
                     agent { label 'agent-docker-2' }
                     steps {
-                        unstage name: 'code'
+                        unstash name: 'code'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             echo '---- STATIC ----'
                             sh'''
@@ -68,7 +68,7 @@ pipeline {
                 stage('Security') {
                     agent { label 'agent-docker-2' }
                     steps {
-                        unstage name: 'code'
+                        unstash name: 'code'
                         sh'''
                         bandit --exit-zero -r app test -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"
                         '''
@@ -79,7 +79,7 @@ pipeline {
                 stage('Performance') {
                     steps {
                         agent { label 'agent-docker-1' }
-                        unstage name: 'code'
+                        unstash name: 'code'
                         sh'''
                         rm -vf /home/jenkins/scripts/test1.jtl
                         /home/jenkins/jmeter/bin/jmeter -n -t /home/jenkins/scripts/test1.jmx -l /home/jenkins/scripts/test1.jtl
