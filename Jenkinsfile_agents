@@ -1,19 +1,22 @@
-/* groovylint-disable NestedBlockDepth */
 pipeline {
     agent any
     options { skipDefaultCheckout() }
     stages {
             stage('Get Code') {
+            agent { label 'agent-docker-1' }
             steps {
                 echo '---- DOWNLOAD REPO ----'
                 checkout scm
                 echo '---- WORKSPACE ----'
                 echo WORKSPACE
+                stash name: 'code', includes:'**' //includes everything
             }
-        }
+            }
 
         stage('Unit') {
+            agent { label 'agent-docker-4' }
                     steps {
+                        unstage name: 'code'
                         echo '---- UNIT ----'
                         sh '''
                         cp /home/jenkins/scripts/.coveragerc .
@@ -26,7 +29,9 @@ pipeline {
         stage('Test') {
             parallel {
                 stage('Rest') {
+                    agent { label 'agent-docker-1' }
                     steps {
+                        unstage name: 'code'
                         echo '---- REST ----'
                         sh'''
                         export FLASK_APP=./app/api.py
@@ -39,7 +44,9 @@ pipeline {
                 }
 
                 stage('Static') {
+                    agent { label 'agent-docker-2' }
                     steps {
+                        unstage name: 'code'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             echo '---- STATIC ----'
                             sh'''
@@ -52,13 +59,16 @@ pipeline {
                 }
 
                 stage('Coverage') {
+                    agent { label 'agent-docker-4' }
                     steps {
                         recordCoverage qualityGates: [[criticality: 'ERROR', integerThreshold: 85, metric: 'LINE', threshold: 85.0], [criticality: 'NOTE', integerThreshold: 95, metric: 'LINE', threshold: 95.0], [criticality: 'ERROR', integerThreshold: 80, metric: 'BRANCH', threshold: 80.0], [criticality: 'NOTE', integerThreshold: 90, metric: 'BRANCH', threshold: 90.0]], tools: [[parser: 'COBERTURA', pattern: 'coverage.xml']]
                     }
                 }
 
                 stage('Security') {
+                    agent { label 'agent-docker-2' }
                     steps {
+                        unstage name: 'code'
                         sh'''
                         bandit --exit-zero -r app test -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"
                         '''
@@ -68,6 +78,8 @@ pipeline {
 
                 stage('Performance') {
                     steps {
+                        agent { label 'agent-docker-1' }
+                        unstage name: 'code'
                         sh'''
                         rm -vf /home/jenkins/scripts/test1.jtl
                         /home/jenkins/jmeter/bin/jmeter -n -t /home/jenkins/scripts/test1.jmx -l /home/jenkins/scripts/test1.jtl
@@ -78,10 +90,10 @@ pipeline {
             }
         }
     }
-/*    post {
+    post {
         always {
             echo '---- Clean Workspace ----'
             deleteDir()
         }
-    } */
+    }
 }
