@@ -69,6 +69,8 @@ pipeline {
                 stage('Performance') {
                     steps {
                         sh'''
+                        export FLASK_APP=./app/api.py
+                        flask run &
                         rm -vf /home/jenkins/scripts/test1.jtl
                         /home/jenkins/jmeter/bin/jmeter -n -t /home/jenkins/scripts/test1.jmx -l /home/jenkins/scripts/test1.jtl
                         '''
