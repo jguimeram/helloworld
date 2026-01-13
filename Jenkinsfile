@@ -1,4 +1,3 @@
-/* groovylint-disable NestedBlockDepth */
 pipeline {
     agent any
     options { skipDefaultCheckout() }
