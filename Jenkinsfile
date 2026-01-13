@@ -52,9 +52,10 @@ pipeline {
 
                 stage('Coverage') {
                     steps {
-                        waitUntil(initialRecurrencePeriod: 1500) {
+                            waitUntil {
+                                fileExists('coverage.xml')
+                            }
                             recordCoverage qualityGates: [[criticality: 'ERROR', integerThreshold: 85, metric: 'LINE', threshold: 85.0], [criticality: 'NOTE', integerThreshold: 95, metric: 'LINE', threshold: 95.0], [criticality: 'ERROR', integerThreshold: 80, metric: 'BRANCH', threshold: 80.0], [criticality: 'NOTE', integerThreshold: 90, metric: 'BRANCH', threshold: 90.0]], tools: [[parser: 'COBERTURA', pattern: 'coverage.xml']]
-                        }
                     }
                 }
 
