@@ -30,6 +30,13 @@ pipeline {
                         sh'''
                         export FLASK_APP=./app/api.py
                         flask run &
+                        '''
+                        timeout(time: 1, unit: 'MINUTES') {
+                            waitUntil {
+                                checkIfFlaskIsRunning()
+                            }
+                        }
+                        sh'''
                         java -jar /home/jenkins/wiremock/wiremock-standalone-3.13.2.jar --port 9090 --root-dir ./test/wiremock &
                         sleep 3s
                         pytest test/rest
@@ -92,4 +99,10 @@ pipeline {
             deleteDir()
         }
     }
+}
+
+def checkIfFlaskIsRunning() {
+    def ec = sh returnStatus: true, script: 'curl http://localhost:5000'
+
+    return ec == 0
 }
