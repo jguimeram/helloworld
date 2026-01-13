@@ -9,9 +9,11 @@ pipeline {
                 echo '---- WORKSPACE ----'
                 echo WORKSPACE
             }
-        }
+            }
 
-        stage('Unit') {
+        stage('Test') {
+            parallel {
+                stage('Unit') {
                     steps {
                         echo '---- UNIT ----'
                         sh '''
@@ -20,10 +22,8 @@ pipeline {
                         pytest --cov=app --cov-branch --cov-report=xml test/unit
                         '''
                     }
-        }
+                }
 
-        stage('Test') {
-            parallel {
                 stage('Rest') {
                     steps {
                         echo '---- REST ----'
@@ -84,5 +84,5 @@ pipeline {
             echo '---- Clean Workspace ----'
             deleteDir()
         }
-    } 
+    }
 }
