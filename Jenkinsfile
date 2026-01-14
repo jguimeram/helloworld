@@ -9,7 +9,7 @@ pipeline {
                 echo '---- WORKSPACE ----'
                 echo WORKSPACE
             }
-        }
+            }
 
         stage('Unit') {
                     steps {
@@ -17,8 +17,9 @@ pipeline {
                         sh '''
                         cp /home/jenkins/scripts/.coveragerc .
                         export PYTHONPATH=$PWD
-                        pytest --cov=app --cov-branch --cov-report=xml test/unit
+                        pytest --cov=app --cov-branch --cov-report=xml --junitxml=result-unit.xml test/unit
                         '''
+                        junit 'result-unit.xml'
                     }
         }
 
@@ -32,8 +33,9 @@ pipeline {
                         flask run &
                         java -jar /home/jenkins/wiremock/wiremock-standalone-3.13.2.jar --port 9090 --root-dir ./test/wiremock &
                         sleep 3s
-                        pytest test/rest
+                        pytest --junitxml=result-rest.xml test/rest
                         '''
+                        junit 'result-rest.xml'
                     }
                 }
 
@@ -84,5 +86,5 @@ pipeline {
             echo '---- Clean Workspace ----'
             deleteDir()
         }
-    } 
+    }
 }
