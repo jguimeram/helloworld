@@ -86,5 +86,5 @@ pipeline {
             echo '---- Clean Workspace ----'
             deleteDir()
         }
-    } 
+    }
 }
