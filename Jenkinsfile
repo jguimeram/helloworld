@@ -2,40 +2,44 @@ pipeline {
     agent any
     options { skipDefaultCheckout() }
     stages {
-            stage('Get Code') {
+        stage('Get Code') {
             steps {
                 echo '---- DOWNLOAD REPO ----'
                 checkout scm
                 echo '---- WORKSPACE ----'
                 echo WORKSPACE
             }
-            }
+        }
 
         stage('Unit') {
-                    steps {
-                        echo '---- UNIT ----'
-                        sh '''
-                        cp /home/jenkins/scripts/.coveragerc .
-                        export PYTHONPATH=$PWD
-                        pytest --cov=app --cov-branch --cov-report=xml --junitxml=result-unit.xml test/unit
-                        '''
-                        junit 'result-unit.xml'
-                    }
+            steps {
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    echo '---- UNIT ----'
+                    sh '''
+                    cp /home/jenkins/scripts/.coveragerc .
+                    export PYTHONPATH=$PWD
+                    pytest --cov=app --cov-branch --cov-report=xml --junitxml=result-unit.xml test/unit
+                    '''
+                    junit 'result-unit.xml'
+                }
+            }
         }
 
         stage('Test') {
             parallel {
                 stage('Rest') {
                     steps {
-                        echo '---- REST ----'
-                        sh'''
-                        export FLASK_APP=./app/api.py
-                        flask run &
-                        java -jar /home/jenkins/wiremock/wiremock-standalone-3.13.2.jar --port 9090 --root-dir ./test/wiremock &
-                        sleep 3s
-                        pytest --junitxml=result-rest.xml test/rest
-                        '''
-                        junit 'result-rest.xml'
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            echo '---- REST ----'
+                            sh'''
+                            export FLASK_APP=./app/api.py
+                            flask run &
+                            java -jar /home/jenkins/wiremock/wiremock-standalone-3.13.2.jar --port 9090 --root-dir ./test/wiremock &
+                            sleep 3s
+                            pytest --junitxml=result-rest.xml test/rest
+                            '''
+                            junit 'result-rest.xml'
+                        }
                     }
                 }
 
@@ -54,28 +58,34 @@ pipeline {
 
                 stage('Coverage') {
                     steps {
-                        recordCoverage qualityGates: [[criticality: 'ERROR', integerThreshold: 85, metric: 'LINE', threshold: 85.0], [criticality: 'NOTE', integerThreshold: 95, metric: 'LINE', threshold: 95.0], [criticality: 'ERROR', integerThreshold: 80, metric: 'BRANCH', threshold: 80.0], [criticality: 'NOTE', integerThreshold: 90, metric: 'BRANCH', threshold: 90.0]], tools: [[parser: 'COBERTURA', pattern: 'coverage.xml']]
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            recordCoverage qualityGates: [[criticality: 'ERROR', integerThreshold: 85, metric: 'LINE', threshold: 85.0], [criticality: 'NOTE', integerThreshold: 95, metric: 'LINE', threshold: 95.0], [criticality: 'ERROR', integerThreshold: 80, metric: 'BRANCH', threshold: 80.0], [criticality: 'NOTE', integerThreshold: 90, metric: 'BRANCH', threshold: 90.0]], tools: [[parser: 'COBERTURA', pattern: 'coverage.xml']]
+                        }
                     }
                 }
 
                 stage('Security') {
                     steps {
-                        sh'''
-                        bandit --exit-zero -r app test -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"
-                        '''
-                        recordIssues qualityGates: [[integerThreshold: 2, threshold: 2.0, type: 'TOTAL'], [criticality: 'FAILURE', integerThreshold: 4, threshold: 4.0, type: 'TOTAL']], sourceCodeRetention: 'NEVER', tools: [pyLint(name: 'bandit', pattern: 'bandit.out')]
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            sh'''
+                            bandit --exit-zero -r app test -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"
+                            '''
+                            recordIssues qualityGates: [[integerThreshold: 2, threshold: 2.0, type: 'TOTAL'], [criticality: 'FAILURE', integerThreshold: 4, threshold: 4.0, type: 'TOTAL']], sourceCodeRetention: 'NEVER', tools: [pyLint(name: 'bandit', pattern: 'bandit.out')]
+                        }
                     }
                 }
 
                 stage('Performance') {
                     steps {
-                        sh'''
-                        export FLASK_APP=./app/api.py
-                        flask run &
-                        rm -vf /home/jenkins/scripts/test1.jtl
-                        /home/jenkins/jmeter/bin/jmeter -n -t /home/jenkins/scripts/test1.jmx -l /home/jenkins/scripts/test1.jtl
-                        '''
-                        perfReport filterRegex: '', showTrendGraphs: true, sourceDataFiles: '/home/jenkins/scripts/test1.jtl'
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            sh'''
+                            export FLASK_APP=./app/api.py
+                            flask run &
+                            rm -vf /home/jenkins/scripts/test1.jtl
+                            /home/jenkins/jmeter/bin/jmeter -n -t /home/jenkins/scripts/test1.jmx -l /home/jenkins/scripts/test1.jtl
+                            '''
+                            perfReport filterRegex: '', showTrendGraphs: true, sourceDataFiles: '/home/jenkins/scripts/test1.jtl'
+                        }
                     }
                 }
             }
