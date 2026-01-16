@@ -83,6 +83,7 @@ pipeline {
                     agent { label 'agent-docker-2' }
                     steps {
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            cleanWs(patterns: [[pattern: 'bandit.out', type: 'EXCLUDE']])
                             unstash name: 'code'
                             sh'''
                             bandit --exit-zero -r app test -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"
