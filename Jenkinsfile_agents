@@ -5,21 +5,18 @@ pipeline {
             stage('Get Code') {
             agent { label 'agent-docker-1' }
             steps {
-                echo '---- CLEAN BEFORE BUILD STARTS ----'
-                cleanWs()
                 echo '---- DOWNLOAD REPO ----'
                 checkout scm
                 echo '---- WORKSPACE ----'
                 echo WORKSPACE
                 stash name: 'code', includes:'**' //includes everything
-            }
+                }
             }
 
         stage('Unit') {
             agent { label 'agent-docker-4' }
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    cleanWs()
                     unstash name: 'code'
                     echo '---- UNIT ----'
                     sh '''
@@ -38,7 +35,6 @@ pipeline {
                     agent { label 'agent-docker-1' }
                     steps {
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                            cleanWs()
                             unstash name: 'code'
                             echo '---- REST ----'
                             sh'''
@@ -57,7 +53,6 @@ pipeline {
                     agent { label 'agent-docker-2' }
                     steps {
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                            cleanWs()
                             unstash name: 'code'
                             echo '---- STATIC ----'
                             sh'''
@@ -73,7 +68,6 @@ pipeline {
                     agent { label 'agent-docker-4' }
                     steps {
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                            cleanWs(patterns: [[pattern: 'coverage.xml', type: 'EXCLUDE']])
                             recordCoverage qualityGates: [[criticality: 'ERROR', integerThreshold: 85, metric: 'LINE', threshold: 85.0], [criticality: 'NOTE', integerThreshold: 95, metric: 'LINE', threshold: 95.0], [criticality: 'ERROR', integerThreshold: 80, metric: 'BRANCH', threshold: 80.0], [criticality: 'NOTE', integerThreshold: 90, metric: 'BRANCH', threshold: 90.0]], tools: [[parser: 'COBERTURA', pattern: 'coverage.xml']]
                         }
                     }
@@ -83,7 +77,6 @@ pipeline {
                     agent { label 'agent-docker-2' }
                     steps {
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                            cleanWs(patterns: [[pattern: 'bandit.out', type: 'EXCLUDE']])
                             unstash name: 'code'
                             sh'''
                             bandit --exit-zero -r app test -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"
@@ -95,9 +88,8 @@ pipeline {
 
                 stage('Performance') {
                     agent { label 'agent-docker-1' }
-                    steps {
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                            cleanWs()
+                        steps {
+                            catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             unstash name: 'code'
                             sh'''
                             export FLASK_APP=./app/api.py
