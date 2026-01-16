@@ -56,9 +56,9 @@ pipeline {
                 stage('Static') {
                     agent { label 'agent-docker-2' }
                     steps {
-                        cleanWs()
-                        unstash name: 'code'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            cleanWs()
+                            unstash name: 'code'
                             echo '---- STATIC ----'
                             sh'''
                             export PYTHONPATH=$PWD
