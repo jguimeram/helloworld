@@ -84,7 +84,7 @@ pipeline {
                                 '''
                                 scripts {
                                     if (fileExists('bandit.out')) {
-                                    recordIssues qualityGates: [[integerThreshold: 2, threshold: 2.0, type: 'TOTAL'], [criticality: 'FAILURE', integerThreshold: 4, threshold: 4.0, type: 'TOTAL']], sourceCodeRetention: 'NEVER', tools: [pyLint(name: 'bandit', pattern: 'bandit.out')]
+                                    steps.recordIssues qualityGates: [[integerThreshold: 2, threshold: 2.0, type: 'TOTAL'], [criticality: 'FAILURE', integerThreshold: 4, threshold: 4.0, type: 'TOTAL']], sourceCodeRetention: 'NEVER', tools: [pyLint(name: 'bandit', pattern: 'bandit.out')]
                                     }
                                 }
                             }
