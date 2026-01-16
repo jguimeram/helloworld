@@ -81,11 +81,11 @@ pipeline {
                                 sh'''
                                 bandit --exit-zero -r app test -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"
                                 '''
-                                script {
+                            }
+                            script {
                                     if (fileExists('bandit.out')) {
                                     steps.recordIssues qualityGates: [[integerThreshold: 2, threshold: 2.0, type: 'TOTAL'], [criticality: 'FAILURE', integerThreshold: 4, threshold: 4.0, type: 'TOTAL']], sourceCodeRetention: 'NEVER', tools: [pyLint(name: 'bandit', pattern: 'bandit.out')]
                                     }
-                                }
                             }
                     }
                 }
