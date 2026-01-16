@@ -6,6 +6,7 @@ pipeline {
         stage('Get Code') {
             agent { label 'agent-docker-1' }
             steps {
+                cleanWs()
                 echo '---- DOWNLOAD REPO ----'
                 checkout scm
                 echo '---- WORKSPACE ----'
@@ -17,6 +18,7 @@ pipeline {
         stage('Unit') {
             agent { label 'agent-docker-4' }
             steps {
+                cleanWs()
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     unstash name: 'code'
                     echo '---- UNIT ----'
@@ -35,6 +37,7 @@ pipeline {
                 stage('Rest') {
                     agent { label 'agent-docker-1' }
                     steps {
+                        cleanWs()
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             unstash name: 'code'
                             echo '---- REST ----'
@@ -53,6 +56,7 @@ pipeline {
                 stage('Static') {
                     agent { label 'agent-docker-2' }
                     steps {
+                        cleanWs()
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             unstash name: 'code'
                             echo '---- STATIC ----'
@@ -68,6 +72,7 @@ pipeline {
                 stage('Coverage') {
                     agent { label 'agent-docker-4' }
                     steps {
+                        cleanWs()
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             recordCoverage qualityGates: [[criticality: 'ERROR', integerThreshold: 85, metric: 'LINE', threshold: 85.0], [criticality: 'NOTE', integerThreshold: 95, metric: 'LINE', threshold: 95.0], [criticality: 'ERROR', integerThreshold: 80, metric: 'BRANCH', threshold: 80.0], [criticality: 'NOTE', integerThreshold: 90, metric: 'BRANCH', threshold: 90.0]], tools: [[parser: 'COBERTURA', pattern: 'coverage.xml']]
                         }
@@ -77,6 +82,7 @@ pipeline {
                 stage('Security') {
                     agent { label 'agent-docker-2' }
                     steps {
+                        cleanWs()
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             unstash name: 'code'
                             sh'''
@@ -90,6 +96,7 @@ pipeline {
                 stage('Performance') {
                     agent { label 'agent-docker-1' }
                     steps {
+                        cleanWs()
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             unstash name: 'code'
                             sh'''
@@ -103,12 +110,6 @@ pipeline {
                     }
                 }
             }
-        }
-    }
-    post {
-        always {
-            echo '---- Clean Workspace ----'
-            cleanWs()
         }
     }
 }
