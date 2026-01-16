@@ -76,7 +76,6 @@ pipeline {
                 stage('Security') {
                     agent { label 'agent-docker-2' }
                     steps {
-                        deleteDir()
                         unstash name: 'code'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             sh'''
