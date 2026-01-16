@@ -1,3 +1,4 @@
+/* groovylint-disable CompileStatic, DuplicateStringLiteral, LineLength, NestedBlockDepth */
 pipeline {
     agent any
     options { skipDefaultCheckout() }
@@ -76,8 +77,8 @@ pipeline {
                 stage('Security') {
                     agent { label 'agent-docker-2' }
                     steps {
-                        unstash name: 'code'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            unstash name: 'code'
                             sh'''
                             bandit --exit-zero -r app test -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"
                             '''
