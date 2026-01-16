@@ -5,13 +5,15 @@ pipeline {
             stage('Get Code') {
             agent { label 'agent-docker-1' }
             steps {
+                echo '---- CLEAN BEFORE BUILD STARTS ----'
+                cleanWs()
                 echo '---- DOWNLOAD REPO ----'
                 checkout scm
                 echo '---- WORKSPACE ----'
                 echo WORKSPACE
                 stash name: 'code', includes:'**' //includes everything
             }
-        }
+            }
 
         stage('Unit') {
             agent { label 'agent-docker-4' }
@@ -107,7 +109,7 @@ pipeline {
     post {
         always {
             echo '---- Clean Workspace ----'
-            deleteDir()
+            cleanWs()
         }
     }
 }

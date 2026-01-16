@@ -4,6 +4,8 @@ pipeline {
     stages {
         stage('Get Code') {
             steps {
+                echo '---- CLEAN BEFORE BUILD STARTS ----'
+                cleanWs()
                 echo '---- DOWNLOAD REPO ----'
                 checkout scm
                 echo '---- WORKSPACE ----'
@@ -94,7 +96,8 @@ pipeline {
     post {
         always {
             echo '---- Clean Workspace ----'
-            deleteDir()
+            cleanWs()
         }
     }
 }
+
