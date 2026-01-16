@@ -2,7 +2,7 @@ pipeline {
     agent any
     options { skipDefaultCheckout() }
     stages {
-        stage('Get Code') {
+            stage('Get Code') {
             agent { label 'agent-docker-1' }
             steps {
                 echo '---- DOWNLOAD REPO ----'
@@ -10,15 +10,14 @@ pipeline {
                 echo '---- WORKSPACE ----'
                 echo WORKSPACE
                 stash name: 'code', includes:'**' //includes everything
+                }
             }
-        }
 
         stage('Unit') {
             agent { label 'agent-docker-4' }
             steps {
-                deleteDir()
-                unstash name: 'code'
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    unstash name: 'code'
                     echo '---- UNIT ----'
                     sh '''
                     cp /home/jenkins/scripts/.coveragerc .
@@ -35,9 +34,8 @@ pipeline {
                 stage('Rest') {
                     agent { label 'agent-docker-1' }
                     steps {
-                        deleteDir()
-                        unstash name: 'code'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            unstash name: 'code'
                             echo '---- REST ----'
                             sh'''
                             export FLASK_APP=./app/api.py
@@ -54,9 +52,8 @@ pipeline {
                 stage('Static') {
                     agent { label 'agent-docker-2' }
                     steps {
-                        deleteDir()
-                        unstash name: 'code'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            unstash name: 'code'
                             echo '---- STATIC ----'
                             sh'''
                             export PYTHONPATH=$PWD
@@ -70,8 +67,6 @@ pipeline {
                 stage('Coverage') {
                     agent { label 'agent-docker-4' }
                     steps {
-                        deleteDir()
-                        unstash name: 'code'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             recordCoverage qualityGates: [[criticality: 'ERROR', integerThreshold: 85, metric: 'LINE', threshold: 85.0], [criticality: 'NOTE', integerThreshold: 95, metric: 'LINE', threshold: 95.0], [criticality: 'ERROR', integerThreshold: 80, metric: 'BRANCH', threshold: 80.0], [criticality: 'NOTE', integerThreshold: 90, metric: 'BRANCH', threshold: 90.0]], tools: [[parser: 'COBERTURA', pattern: 'coverage.xml']]
                         }
@@ -81,9 +76,8 @@ pipeline {
                 stage('Security') {
                     agent { label 'agent-docker-2' }
                     steps {
-                        deleteDir()
-                        unstash name: 'code'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            unstash name: 'code'
                             sh'''
                             bandit --exit-zero -r app test -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"
                             '''
@@ -94,10 +88,9 @@ pipeline {
 
                 stage('Performance') {
                     agent { label 'agent-docker-1' }
-                    steps {
-                        deleteDir()
-                        unstash name: 'code'
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                        steps {
+                            catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            unstash name: 'code'
                             sh'''
                             export FLASK_APP=./app/api.py
                             flask run &
@@ -109,6 +102,12 @@ pipeline {
                     }
                 }
             }
+        }
+    }
+    post {
+        always {
+            echo '---- Clean Workspace ----'
+            cleanWs()
         }
     }
 }
