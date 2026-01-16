@@ -2,7 +2,7 @@ pipeline {
     agent any
     options { skipDefaultCheckout() }
     stages {
-            stage('Get Code') {
+        stage('Get Code') {
             agent { label 'agent-docker-1' }
             steps {
                 echo '---- DOWNLOAD REPO ----'
@@ -11,7 +11,7 @@ pipeline {
                 echo WORKSPACE
                 stash name: 'code', includes:'**' //includes everything
             }
-            }
+        }
 
         stage('Unit') {
             agent { label 'agent-docker-4' }
@@ -76,20 +76,21 @@ pipeline {
                 stage('Security') {
                     agent { label 'agent-docker-2' }
                     steps {
-                            unstash name: 'code'
-                            catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                                sh'''
-                                bandit --exit-zero -r app test -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"
-                                '''
-                                    recordIssues qualityGates: [[integerThreshold: 2, threshold: 2.0, type: 'TOTAL'], [criticality: 'FAILURE', integerThreshold: 4, threshold: 4.0, type: 'TOTAL']], sourceCodeRetention: 'NEVER', tools: [pyLint(name: 'bandit', pattern: 'bandit.out')]
-                            }
+                        deleteDir()
+                        unstash name: 'code'
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            sh'''
+                            bandit --exit-zero -r app test -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"
+                            '''
+                            recordIssues qualityGates: [[integerThreshold: 2, threshold: 2.0, type: 'TOTAL'], [criticality: 'FAILURE', integerThreshold: 4, threshold: 4.0, type: 'TOTAL']], sourceCodeRetention: 'NEVER', tools: [pyLint(name: 'bandit', pattern: 'bandit.out')]
+                        }
                     }
                 }
 
                 stage('Performance') {
                     agent { label 'agent-docker-1' }
-                        steps {
-                            catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    steps {
+                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             unstash name: 'code'
                             sh'''
                             export FLASK_APP=./app/api.py
@@ -98,8 +99,8 @@ pipeline {
                             /home/jenkins/jmeter/bin/jmeter -n -t /home/jenkins/scripts/test1.jmx -l /home/jenkins/scripts/test1.jtl
                             '''
                             perfReport filterRegex: '', showTrendGraphs: true, sourceDataFiles: '/home/jenkins/scripts/test1.jtl'
-                            }
                         }
+                    }
                 }
             }
         }
