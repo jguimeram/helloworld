@@ -34,9 +34,11 @@ pipeline {
                     sh'''
                     export FLASK_APP=./app/api.py
                     flask run &
+                    FLASK_PID=$!
                     java -jar /home/jenkins/wiremock/wiremock-standalone-3.13.2.jar --port 9090 --root-dir ./test/wiremock &
                     sleep 3s
                     pytest --junitxml=result-rest.xml test/rest
+                    kill $FLASK_PID
                     '''
                     junit 'result-rest.xml'
                 }
@@ -59,6 +61,7 @@ pipeline {
         stage('Coverage') {
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    echo '---- COVERAGE ----'
                     recordCoverage qualityGates: [[criticality: 'ERROR', integerThreshold: 85, metric: 'LINE', threshold: 85.0], [criticality: 'NOTE', integerThreshold: 95, metric: 'LINE', threshold: 95.0], [criticality: 'ERROR', integerThreshold: 80, metric: 'BRANCH', threshold: 80.0], [criticality: 'NOTE', integerThreshold: 90, metric: 'BRANCH', threshold: 90.0]], tools: [[parser: 'COBERTURA', pattern: 'coverage.xml']]
                 }
             }
@@ -67,6 +70,7 @@ pipeline {
         stage('Security') {
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    echo '---- SECURITY ----'
                     sh'''
                     bandit --exit-zero -r app test -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"
                     '''
@@ -78,11 +82,14 @@ pipeline {
         stage('Performance') {
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    echo '---- PERFORMANCE ----'
                     sh'''
                     export FLASK_APP=./app/api.py
                     flask run &
+                    FLASK_PID=$!
                     rm -vf /home/jenkins/scripts/test1.jtl
                     /home/jenkins/jmeter/bin/jmeter -n -t /home/jenkins/scripts/test1.jmx -l /home/jenkins/scripts/test1.jtl
+                    kill FLASK_PID
                     '''
                     perfReport filterRegex: '', showTrendGraphs: true, sourceDataFiles: '/home/jenkins/scripts/test1.jtl'
                 }
@@ -91,7 +98,7 @@ pipeline {
     }
     post {
         always {
-            echo '---- Clean Workspace ----'
+            echo '---- CLEAN WORKSPACE ----'
             cleanWs()
         }
     }
