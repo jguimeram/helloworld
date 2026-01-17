@@ -27,7 +27,7 @@ pipeline {
                     pytest --cov=app --cov-branch --cov-report=xml --junitxml=result-unit.xml test/unit
                     '''
                     junit 'result-unit.xml'
-                    stash name: 'report', includes:'result-unit.xml'
+                    stash name: 'report', includes:'coverage.xml'
                 }
             }
         }
