@@ -4,7 +4,7 @@ pipeline {
     options { skipDefaultCheckout() }
     stages {
         stage('Get Code') {
-            agent { label 'agent-docker-1' }
+            agent { label 'agent-docker-4' }
             steps {
                 cleanWs()
                 echo '---- DOWNLOAD REPO ----'
@@ -16,7 +16,7 @@ pipeline {
         }
 
         stage('Unit') {
-            agent { label 'agent-docker-4' }
+            agent { label 'agent-docker-1' }
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     unstash name: 'code'
@@ -27,6 +27,7 @@ pipeline {
                     pytest --cov=app --cov-branch --cov-report=xml --junitxml=result-unit.xml test/unit
                     '''
                     junit 'result-unit.xml'
+                    stash name: 'report', includes:'result-unit.xml'
                 }
             }
         }
@@ -70,16 +71,17 @@ pipeline {
                 }
 
                 stage('Coverage') {
-                    agent { label 'agent-docker-4' }
+                    agent { label 'agent-docker-2' }
                     steps {
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                            unstash name: 'report'
                             recordCoverage qualityGates: [[criticality: 'ERROR', integerThreshold: 85, metric: 'LINE', threshold: 85.0], [criticality: 'NOTE', integerThreshold: 95, metric: 'LINE', threshold: 95.0], [criticality: 'ERROR', integerThreshold: 80, metric: 'BRANCH', threshold: 80.0], [criticality: 'NOTE', integerThreshold: 90, metric: 'BRANCH', threshold: 90.0]], tools: [[parser: 'COBERTURA', pattern: 'coverage.xml']]
                         }
                     }
                 }
 
                 stage('Security') {
-                    agent { label 'agent-docker-2' }
+                    agent { label 'agent-docker-3' }
                     steps {
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             unstash name: 'code'
@@ -92,7 +94,7 @@ pipeline {
                 }
 
                 stage('Performance') {
-                    agent { label 'agent-docker-1' }
+                    agent { label 'agent-docker-3' }
                     steps {
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             unstash name: 'code'
@@ -127,8 +129,8 @@ pipeline {
                     }
                 }
 
-                stage('Clean agent-4') {
-                    agent { label 'agent-docker-4' }
+                stage('Clean agent-3') {
+                    agent { label 'agent-docker-3' }
                     steps {
                         cleanWs()
                     }
