@@ -89,7 +89,7 @@ pipeline {
                     FLASK_PID=$!
                     rm -vf /home/jenkins/scripts/test1.jtl
                     /home/jenkins/jmeter/bin/jmeter -n -t /home/jenkins/scripts/test1.jmx -l /home/jenkins/scripts/test1.jtl
-                    kill FLASK_PID
+                    kill $FLASK_PID
                     '''
                     perfReport filterRegex: '', showTrendGraphs: true, sourceDataFiles: '/home/jenkins/scripts/test1.jtl'
                 }
