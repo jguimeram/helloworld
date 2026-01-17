@@ -36,9 +36,10 @@ pipeline {
                     flask run &
                     FLASK_PID=$!
                     java -jar /home/jenkins/wiremock/wiremock-standalone-3.13.2.jar --port 9090 --root-dir ./test/wiremock &
+                    WM_PID=$!
                     sleep 3s
                     pytest --junitxml=result-rest.xml test/rest
-                    kill $FLASK_PID
+                    kill $FLASK_PID $WM_PID
                     '''
                     junit 'result-rest.xml'
                 }

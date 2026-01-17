@@ -42,9 +42,12 @@ pipeline {
                             sh'''
                             export FLASK_APP=./app/api.py
                             flask run &
+                            FLASK_PID=$!
                             java -jar /home/jenkins/wiremock/wiremock-standalone-3.13.2.jar --port 9090 --root-dir ./test/wiremock &
+                            WM_PID=$!
                             sleep 3s
                             pytest --junitxml=result-rest.xml test/rest
+                            kill $FLASK_PID $WM_PID
                             '''
                             junit 'result-rest.xml'
                         }
@@ -96,8 +99,10 @@ pipeline {
                             sh'''
                             export FLASK_APP=./app/api.py
                             flask run &
+                            FLASK_PID=$!
                             rm -vf /home/jenkins/scripts/test1.jtl
                             /home/jenkins/jmeter/bin/jmeter -n -t /home/jenkins/scripts/test1.jmx -l /home/jenkins/scripts/test1.jtl
+                            kill $FLASK_PID
                             '''
                             perfReport filterRegex: '', showTrendGraphs: true, sourceDataFiles: '/home/jenkins/scripts/test1.jtl'
                         }
