@@ -2,22 +2,33 @@
 pipeline {
     agent any
     options { skipDefaultCheckout() }
+
     stages {
         stage('Get Code') {
             agent { label 'agent-docker-4' }
             steps {
+                sh '''
+                whoami
+                hostname
+                echo ${WORKSPACE}
+                '''
                 cleanWs()
                 echo '---- DOWNLOAD REPO ----'
                 checkout scm
                 echo '---- WORKSPACE ----'
                 echo WORKSPACE
-                stash name: 'code', includes:'**' //includes everything
+                stash name: 'code', includes:'**'
             }
         }
 
         stage('Unit') {
             agent { label 'agent-docker-1' }
             steps {
+                sh '''
+                whoami
+                hostname
+                echo ${WORKSPACE}
+                '''
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     cleanWs()
                     unstash name: 'code'
@@ -38,11 +49,16 @@ pipeline {
                 stage('Rest') {
                     agent { label 'agent-docker-1' }
                     steps {
+                        sh '''
+                        whoami
+                        hostname
+                        echo ${WORKSPACE}
+                        '''
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             cleanWs()
                             unstash name: 'code'
                             echo '---- REST ----'
-                            sh'''
+                            sh '''
                             export FLASK_APP=./app/api.py
                             flask run &
                             FLASK_PID=$!
@@ -60,15 +76,27 @@ pipeline {
                 stage('Static') {
                     agent { label 'agent-docker-2' }
                     steps {
+                        sh '''
+                        whoami
+                        hostname
+                        echo ${WORKSPACE}
+                        '''
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             cleanWs()
                             unstash name: 'code'
                             echo '---- STATIC ----'
-                            sh'''
+                            sh '''
                             export PYTHONPATH=$PWD
                             flake8 --format=pylint --exit-zero app > flake8.out
                             '''
-                            recordIssues qualityGates: [[integerThreshold: 8, threshold: 8.0, type: 'TOTAL'], [criticality: 'FAILURE', integerThreshold: 10, threshold: 10.0, type: 'TOTAL']], sourceCodeRetention: 'NEVER', tools: [flake8(pattern: 'flake8.out')]
+                            recordIssues(
+                                qualityGates: [
+                                    [integerThreshold: 8, threshold: 8.0, type: 'TOTAL'],
+                                    [criticality: 'FAILURE', integerThreshold: 10, threshold: 10.0, type: 'TOTAL']
+                                ],
+                                sourceCodeRetention: 'NEVER',
+                                tools: [flake8(pattern: 'flake8.out')]
+                            )
                         }
                     }
                 }
@@ -76,10 +104,23 @@ pipeline {
                 stage('Coverage') {
                     agent { label 'agent-docker-2' }
                     steps {
+                        sh '''
+                        whoami
+                        hostname
+                        echo ${WORKSPACE}
+                        '''
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             cleanWs()
                             unstash name: 'report'
-                            recordCoverage qualityGates: [[criticality: 'ERROR', integerThreshold: 85, metric: 'LINE', threshold: 85.0], [criticality: 'NOTE', integerThreshold: 95, metric: 'LINE', threshold: 95.0], [criticality: 'ERROR', integerThreshold: 80, metric: 'BRANCH', threshold: 80.0], [criticality: 'NOTE', integerThreshold: 90, metric: 'BRANCH', threshold: 90.0]], tools: [[parser: 'COBERTURA', pattern: 'coverage.xml']]
+                            recordCoverage(
+                                qualityGates: [
+                                    [criticality: 'ERROR', integerThreshold: 85, metric: 'LINE', threshold: 85.0],
+                                    [criticality: 'NOTE',  integerThreshold: 95, metric: 'LINE', threshold: 95.0],
+                                    [criticality: 'ERROR', integerThreshold: 80, metric: 'BRANCH', threshold: 80.0],
+                                    [criticality: 'NOTE',  integerThreshold: 90, metric: 'BRANCH', threshold: 90.0]
+                                ],
+                                tools: [[parser: 'COBERTURA', pattern: 'coverage.xml']]
+                            )
                         }
                     }
                 }
@@ -87,13 +128,26 @@ pipeline {
                 stage('Security') {
                     agent { label 'agent-docker-3' }
                     steps {
+                        sh '''
+                        whoami
+                        hostname
+                        echo ${WORKSPACE}
+                        '''
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             cleanWs()
                             unstash name: 'code'
-                            sh'''
-                            bandit --exit-zero -r app test -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {msg}"
+                            sh '''
+                            bandit --exit-zero -r app test -f custom -o bandit.out \
+                                   --msg-template "{abspath}:{line}: [{test_id}] {msg}"
                             '''
-                            recordIssues qualityGates: [[integerThreshold: 2, threshold: 2.0, type: 'TOTAL'], [criticality: 'FAILURE', integerThreshold: 4, threshold: 4.0, type: 'TOTAL']], sourceCodeRetention: 'NEVER', tools: [pyLint(name: 'bandit', pattern: 'bandit.out')]
+                            recordIssues(
+                                qualityGates: [
+                                    [integerThreshold: 2, threshold: 2.0, type: 'TOTAL'],
+                                    [criticality: 'FAILURE', integerThreshold: 4, threshold: 4.0, type: 'TOTAL']
+                                ],
+                                sourceCodeRetention: 'NEVER',
+                                tools: [pyLint(name: 'bandit', pattern: 'bandit.out')]
+                            )
                         }
                     }
                 }
@@ -101,18 +155,29 @@ pipeline {
                 stage('Performance') {
                     agent { label 'agent-docker-3' }
                     steps {
+                        sh '''
+                        whoami
+                        hostname
+                        echo ${WORKSPACE}
+                        '''
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             cleanWs()
                             unstash name: 'code'
-                            sh'''
+                            sh '''
                             export FLASK_APP=./app/api.py
                             flask run &
                             FLASK_PID=$!
                             rm -vf /home/jenkins/scripts/test1.jtl
-                            /home/jenkins/jmeter/bin/jmeter -n -t /home/jenkins/scripts/test1.jmx -l /home/jenkins/scripts/test1.jtl
+                            /home/jenkins/jmeter/bin/jmeter -n \
+                                -t /home/jenkins/scripts/test1.jmx \
+                                -l /home/jenkins/scripts/test1.jtl
                             kill $FLASK_PID
                             '''
-                            perfReport filterRegex: '', showTrendGraphs: true, sourceDataFiles: '/home/jenkins/scripts/test1.jtl'
+                            perfReport(
+                                filterRegex: '',
+                                showTrendGraphs: true,
+                                sourceDataFiles: '/home/jenkins/scripts/test1.jtl'
+                            )
                         }
                     }
                 }
@@ -123,30 +188,19 @@ pipeline {
             parallel {
                 stage('Clean agent-1') {
                     agent { label 'agent-docker-1' }
-                    steps {
-                        cleanWs()
-                    }
+                    steps { cleanWs() }
                 }
-
                 stage('Clean agent-2') {
                     agent { label 'agent-docker-2' }
-                    steps {
-                        cleanWs()
-                    }
+                    steps { cleanWs() }
                 }
-
                 stage('Clean agent-3') {
                     agent { label 'agent-docker-3' }
-                    steps {
-                        cleanWs()
-                    }
+                    steps { cleanWs() }
                 }
-
                 stage('Clean agent-4') {
                     agent { label 'agent-docker-4' }
-                    steps {
-                        cleanWs()
-                    }
+                    steps { cleanWs() }
                 }
             }
         }
