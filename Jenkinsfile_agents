@@ -1,6 +1,9 @@
 /* groovylint-disable CompileStatic, DuplicateStringLiteral, LineLength, NestedBlockDepth */
 pipeline {
-    agent any
+    agent {
+        label 'agent-docker-4'
+    }
+
     options { skipDefaultCheckout() }
 
     stages {
