@@ -43,6 +43,7 @@ pipeline {
                     '''
                     junit 'result-unit.xml'
                     stash name: 'report', includes:'coverage.xml'
+                    cleanWs()
                 }
             }
         }
