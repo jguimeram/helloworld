@@ -111,6 +111,7 @@ pipeline {
                         '''
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             cleanWs()
+                            unstash name: 'code'
                             unstash name: 'report'
                             recordCoverage(
                                 qualityGates: [
