@@ -113,6 +113,7 @@ pipeline {
                             cleanWs()
                             unstash name: 'code'
                             unstash name: 'report'
+
                             recordCoverage(
                                 qualityGates: [
                                     [criticality: 'ERROR', integerThreshold: 85, metric: 'LINE', threshold: 85.0],
