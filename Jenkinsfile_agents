@@ -1,11 +1,12 @@
-/* groovylint-disable CompileStatic, DuplicateStringLiteral, LineLength, NestedBlockDepth */
+
 pipeline {
     agent any
+
     options { skipDefaultCheckout() }
 
     stages {
         stage('Get Code') {
-            agent { label 'agent-docker-4' }
+            agent { label 'agent-docker-3' }
             steps {
                 sh '''
                 whoami
@@ -111,7 +112,9 @@ pipeline {
                         '''
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             cleanWs()
+                            unstash name: 'code'
                             unstash name: 'report'
+
                             recordCoverage(
                                 qualityGates: [
                                     [criticality: 'ERROR', integerThreshold: 85, metric: 'LINE', threshold: 85.0],
@@ -126,7 +129,7 @@ pipeline {
                 }
 
                 stage('Security') {
-                    agent { label 'agent-docker-3' }
+                    agent { label 'agent-docker-2' }
                     steps {
                         sh '''
                         whoami
@@ -153,11 +156,7 @@ pipeline {
                 }
 
                 stage('Performance') {
-<<<<<<< HEAD
-                    agent { label 'agent-docker-3' }
-=======
                     agent { label 'agent-docker-2' }
->>>>>>> 7854d64 (let's try again)
                     steps {
                         sh '''
                         whoami
