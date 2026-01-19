@@ -102,7 +102,7 @@ pipeline {
                 }
 
                 stage('Coverage') {
-                    agent { label 'agent-docker-2' }
+                    agent { label 'agent-docker-1' }
                     steps {
                         sh '''
                         whoami
@@ -153,7 +153,11 @@ pipeline {
                 }
 
                 stage('Performance') {
+<<<<<<< HEAD
                     agent { label 'agent-docker-3' }
+=======
+                    agent { label 'agent-docker-2' }
+>>>>>>> 7854d64 (let's try again)
                     steps {
                         sh '''
                         whoami
@@ -168,16 +172,10 @@ pipeline {
                             flask run &
                             FLASK_PID=$!
                             rm -vf /home/jenkins/scripts/test1.jtl
-                            /home/jenkins/jmeter/bin/jmeter -n \
-                                -t /home/jenkins/scripts/test1.jmx \
-                                -l /home/jenkins/scripts/test1.jtl
+                            /home/jenkins/jmeter/bin/jmeter -n -t /home/jenkins/scripts/test1.jmx -l /home/jenkins/scripts/test1.jtl
                             kill $FLASK_PID
                             '''
-                            perfReport(
-                                filterRegex: '',
-                                showTrendGraphs: true,
-                                sourceDataFiles: '/home/jenkins/scripts/test1.jtl'
-                            )
+                            perfReport filterRegex: '', showTrendGraphs: true, sourceDataFiles: '/home/jenkins/scripts/test1.jtl'
                         }
                     }
                 }
@@ -196,10 +194,6 @@ pipeline {
                 }
                 stage('Clean agent-3') {
                     agent { label 'agent-docker-3' }
-                    steps { cleanWs() }
-                }
-                stage('Clean agent-4') {
-                    agent { label 'agent-docker-4' }
                     steps { cleanWs() }
                 }
             }
