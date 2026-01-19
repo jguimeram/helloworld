@@ -1,14 +1,12 @@
-/* groovylint-disable CompileStatic, DuplicateStringLiteral, LineLength, NestedBlockDepth */
+
 pipeline {
-    agent {
-        label 'agent-docker-4'
-    }
+    agent any
 
     options { skipDefaultCheckout() }
 
     stages {
         stage('Get Code') {
-            agent { label 'agent-docker-4' }
+            agent { label 'agent-docker-3' }
             steps {
                 sh '''
                 whoami
@@ -131,7 +129,7 @@ pipeline {
                 }
 
                 stage('Security') {
-                    agent { label 'agent-docker-3' }
+                    agent { label 'agent-docker-2' }
                     steps {
                         sh '''
                         whoami
@@ -158,7 +156,7 @@ pipeline {
                 }
 
                 stage('Performance') {
-                    agent { label 'agent-docker-3' }
+                    agent { label 'agent-docker-1' }
                     steps {
                         sh '''
                         whoami
