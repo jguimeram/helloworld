@@ -18,7 +18,6 @@ pipeline {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     echo '---- UNIT ----'
                     sh '''
-                    cp /home/jenkins/scripts/.coveragerc .
                     export PYTHONPATH=$PWD
                     pytest --cov=app --cov-branch --cov-report=xml --junitxml=result-unit.xml test/unit
                     '''
