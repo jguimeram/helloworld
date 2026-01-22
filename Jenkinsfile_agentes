@@ -1,200 +1,111 @@
-
 pipeline {
     agent any
-
-    options { skipDefaultCheckout() }
-
-    stages {
+    options {
+        skipDefaultCheckout true
+    }
+     stages {
         stage('Get Code') {
-            agent { label 'agent-docker-3' }
             steps {
-                sh '''
-                whoami
-                hostname
-                echo ${WORKSPACE}
-                '''
-                cleanWs()
-                echo '---- DOWNLOAD REPO ----'
-                checkout scm
-                echo '---- WORKSPACE ----'
-                echo WORKSPACE
-                stash name: 'code', includes:'**'
+                git 'https://github.com/anieto-unir/res-cp1.b-helloworld.git'
+                stash name:'code', includes:'**'
             }
         }
 
-        stage('Unit') {
-            agent { label 'agent-docker-1' }
-            steps {
-                sh '''
-                whoami
-                hostname
-                echo ${WORKSPACE}
-                '''
-                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    cleanWs()
-                    unstash name: 'code'
-                    echo '---- UNIT ----'
-                    sh '''
-                    export PYTHONPATH=$PWD
-                    pytest --cov=app --cov-branch --cov-report=xml --junitxml=result-unit.xml test/unit
-                    '''
-                    junit 'result-unit.xml'
-                    stash name: 'report', includes:'coverage.xml'
+        stage('Static Tests')
+        {
+            parallel
+            {
+                stage('Flake8') {
+                    agent {label 'agent1'}
+                    steps {
+                        unstash name:'code'
+                        sh '''
+                            /home/agent1/.local/bin/flake8 --exit-zero --format=pylint app >flake8.out
+                        '''   
+                        recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')], qualityGates: [[threshold: 8, type: 'TOTAL', unstable: true], [threshold: 10, type: 'TOTAL', unstable: false]]
+                    }
+                }
+                
+                stage('Security') {
+                    agent {label 'agent2'}
+                    steps {
+                        unstash name:'code'
+                        sh '''
+                            /home/agent2/.local/bin/bandit --exit-zero -r . -f custom -o bandit.out --severity-level medium --msg-template "{abspath}:{line}: [{test_id}] {msg}"
+                        '''
+                        recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')], qualityGates: [[threshold: 2, type: 'TOTAL', unstable: true], [threshold: 4, type: 'TOTAL', unstable: false]]
+                    }
                 }
             }
         }
 
-        stage('Test') {
-            parallel {
-                stage('Rest') {
-                    agent { label 'agent-docker-1' }
+        stage('Dynamic Tests')
+        {
+            parallel
+            {
+                stage('Unit') {
+                    agent {label 'agent1'}
                     steps {
+                        unstash name:'code'
                         sh '''
-                        whoami
-                        hostname
-                        echo ${WORKSPACE}
+                            export PYTHONPATH=${WORKSPACE}
+                            /home/agent1/.local/bin/coverage run --branch --source=app --omit=app/__init__.py,app/api.py -m pytest --junitxml=result-unit.xml test/unit
+                            /home/agent1/.local/bin/coverage xml
                         '''
+                        stash name:'coverage', includes:'coverage.xml'
+                        junit 'result-unit.xml'
+                    }
+                }
+        
+                stage('Rest') {
+                    agent {label 'agent1'}
+                    steps {
+                        unstash name:'code'
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                            cleanWs()
-                            unstash name: 'code'
-                            echo '---- REST ----'
                             sh '''
-                            export FLASK_APP=./app/api.py
-                            flask run &
-                            FLASK_PID=$!
-                            java -jar /home/jenkins/wiremock/wiremock-standalone-3.13.2.jar --port 9090 --root-dir ./test/wiremock &
-                            WM_PID=$!
-                            sleep 3s
-                            pytest --junitxml=result-rest.xml test/rest
-                            kill $FLASK_PID $WM_PID
+                                export FLASK_APP=app/api.py
+                                export FLASK_ENV=development
+                                /home/agent1/.local/bin/flask run -p 5001 &
+                                sleep 4
+                                java -jar /home/agent1/wiremock/wiremock-standalone-3.3.1.jar --port 9090 --root-dir /home/agent1/wiremock &
+                                export PYTHONPATH=${WORKSPACE}
+                                
+                                sleep 25
+                                
+                                /home/agent1/.local/bin/pytest --junitxml=result-rest.xml test/rest
                             '''
                             junit 'result-rest.xml'
                         }
-                    }
+                    }    
                 }
-
-                stage('Static') {
-                    agent { label 'agent-docker-2' }
-                    steps {
-                        sh '''
-                        whoami
-                        hostname
-                        echo ${WORKSPACE}
-                        '''
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                            cleanWs()
-                            unstash name: 'code'
-                            echo '---- STATIC ----'
-                            sh '''
-                            export PYTHONPATH=$PWD
-                            flake8 --format=pylint --exit-zero app > flake8.out
-                            '''
-                            recordIssues(
-                                qualityGates: [
-                                    [integerThreshold: 8, threshold: 8.0, type: 'TOTAL'],
-                                    [criticality: 'FAILURE', integerThreshold: 10, threshold: 10.0, type: 'TOTAL']
-                                ],
-                                sourceCodeRetention: 'NEVER',
-                                tools: [flake8(pattern: 'flake8.out')]
-                            )
-                        }
-                    }
-                }
-
-                stage('Coverage') {
-                    agent { label 'agent-docker-1' }
-                    steps {
-                        sh '''
-                        whoami
-                        hostname
-                        echo ${WORKSPACE}
-                        '''
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                            cleanWs()
-                            unstash name: 'code'
-                            unstash name: 'report'
-
-                            recordCoverage(
-                                qualityGates: [
-                                    [criticality: 'ERROR', integerThreshold: 85, metric: 'LINE', threshold: 85.0],
-                                    [criticality: 'NOTE',  integerThreshold: 95, metric: 'LINE', threshold: 95.0],
-                                    [criticality: 'ERROR', integerThreshold: 80, metric: 'BRANCH', threshold: 80.0],
-                                    [criticality: 'NOTE',  integerThreshold: 90, metric: 'BRANCH', threshold: 90.0]
-                                ],
-                                tools: [[parser: 'COBERTURA', pattern: 'coverage.xml']]
-                            )
-                        }
-                    }
-                }
-
-                stage('Security') {
-                    agent { label 'agent-docker-2' }
-                    steps {
-                        sh '''
-                        whoami
-                        hostname
-                        echo ${WORKSPACE}
-                        '''
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                            cleanWs()
-                            unstash name: 'code'
-                            sh '''
-                            bandit --exit-zero -r app test -f custom -o bandit.out \
-                                   --msg-template "{abspath}:{line}: [{test_id}] {msg}"
-                            '''
-                            recordIssues(
-                                qualityGates: [
-                                    [integerThreshold: 2, threshold: 2.0, type: 'TOTAL'],
-                                    [criticality: 'FAILURE', integerThreshold: 4, threshold: 4.0, type: 'TOTAL']
-                                ],
-                                sourceCodeRetention: 'NEVER',
-                                tools: [pyLint(name: 'bandit', pattern: 'bandit.out')]
-                            )
-                        }
-                    }
-                }
-
+        
                 stage('Performance') {
-                    agent { label 'agent-docker-2' }
+                    agent {label 'agent2'}
                     steps {
+                        unstash name:'code'
                         sh '''
-                        whoami
-                        hostname
-                        echo ${WORKSPACE}
+                            export FLASK_APP=app/api.py
+                            export FLASK_ENV=development
+                            /home/agent2/.local/bin/flask run &
+        
+                            sleep 15
+                            
+                            /home/agent2/jmeter/apache-jmeter-5.6.3/bin/jmeter.sh -n -t test/jmeter/flask.jmx -f -l flask.jtl
                         '''
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                            cleanWs()
-                            unstash name: 'code'
-                            sh '''
-                            export FLASK_APP=./app/api.py
-                            flask run &
-                            FLASK_PID=$!
-                            rm -vf /home/jenkins/scripts/test1.jtl
-                            /home/jenkins/jmeter/bin/jmeter -n -t /home/jenkins/scripts/test1.jmx -l /home/jenkins/scripts/test1.jtl
-                            kill $FLASK_PID
-                            '''
-                            perfReport filterRegex: '', showTrendGraphs: true, sourceDataFiles: '/home/jenkins/scripts/test1.jtl'
-                        }
+                        perfReport sourceDataFiles: 'flask.jtl'
                     }
                 }
             }
         }
-
-        stage('Clean agents') {
-            parallel {
-                stage('Clean agent-1') {
-                    agent { label 'agent-docker-1' }
-                    steps { cleanWs() }
-                }
-                stage('Clean agent-2') {
-                    agent { label 'agent-docker-2' }
-                    steps { cleanWs() }
-                }
-                stage('Clean agent-3') {
-                    agent { label 'agent-docker-3' }
-                    steps { cleanWs() }
+        
+        stage('Cobertura') {
+            steps {
+        	    unstash name:'coverage'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    recordCoverage qualityGates: [[criticality: 'ERROR', integerThreshold: 85, metric: 'LINE', threshold: 85.0], [integerThreshold: 95, metric: 'LINE', threshold: 95.0], [criticality: 'ERROR', integerThreshold: 80, metric: 'BRANCH', threshold: 80.0], [integerThreshold: 90, metric: 'BRANCH', threshold: 90.0]], tools: [[parser: 'COBERTURA', pattern: 'coverage.xml']]
                 }
             }
         }
+        
     }
 }
